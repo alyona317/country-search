@@ -22,5 +22,12 @@ export interface CountryCard {
 }
 
 export const mapCountryResponse = (raw: CountryResponse): CountryCard => {
-  throw new Error(`Not implemented: ${raw.name}`);
+  return {
+    name: raw.name,
+    flag: raw.flags.svg,
+    capital: raw.capital,
+    region: raw.region,
+    population: raw.population,
+    languages: raw.languages.map((language) => language.name),
+  };
 };

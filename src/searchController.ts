@@ -1,3 +1,4 @@
+import { debounce } from './debounce.js';
 import { mapCountryResponse } from './mapCountryResponse.js';
 import { searchCountries } from './searchCountries.js';
 import { getErrorState, getResultState } from './searchState.js';
@@ -24,16 +25,12 @@ export interface SearchController {
 export const createSearchController = (
   options: SearchControllerOptions,
 ): SearchController => {
-  let timerId: ReturnType<typeof setTimeout> | null = null;
   let activeController: AbortController | null = null;
   let latestQuery = '';
   let disposed = false;
 
   const cancelPending = (): void => {
-    if (timerId !== null) {
-      clearTimeout(timerId);
-      timerId = null;
-    }
+    scheduleSearch.cancel();
     activeController?.abort();
     activeController = null;
   };
@@ -81,6 +78,10 @@ export const createSearchController = (
     }
   };
 
+  const scheduleSearch = debounce((query: string): void => {
+    void runSearch(query);
+  }, options.debounceMs);
+
   const setQuery = (query: string): void => {
     if (disposed) {
       return;
@@ -94,11 +95,7 @@ export const createSearchController = (
       return;
     }
 
-    const scheduledQuery = latestQuery;
-    timerId = setTimeout(() => {
-      timerId = null;
-      void runSearch(scheduledQuery);
-    }, options.debounceMs);
+    scheduleSearch(latestQuery);
   };
 
   const retry = (): void => {
